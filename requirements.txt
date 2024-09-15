@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+gunicorn
+sqlalchemy
+pymysql
+dash
+dash_bootstrap_components
+requests
+pandas

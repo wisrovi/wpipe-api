@@ -1,0 +1,62 @@
+version: "3.9"
+services:
+  monitor_backend:
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile.api
+    image: wisrovi/wpipe_api:v1.0
+    ports:
+      - "8418:8000"
+    environment:
+      - MYSQL_USER=process_monitor
+      - MYSQL_PASSWORD=process_monitor
+      - MYSQL_DATABASE=process_monitor
+      - SERVER=db:3306
+      - TOKEN=mysecrettoken
+    command: gunicorn -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 api:app
+    # command: tail -f /dev/null
+    restart: always
+
+  monitor_frontend:
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile.dashboard
+    image: wisrovi/wpipe_api_dashboard:v1.0
+    ports:
+      - "8050:8050"
+    environment:
+      - BACKEND=monitor_backend:8000
+    depends_on:
+      - "monitor_backend"
+    # command: tail -f /dev/null
+    command: python demo_dashboard_base.py
+    restart: always
+
+  db:
+    image: mariadb
+    restart: always
+    labels:
+      "autoheal": "true"
+      Author: "https://www.linkedin.com/in/wisrovi-rodriguez/"
+    environment:
+      - MYSQL_RANDOM_ROOT_PASSWORD=yes
+      - MYSQL_USER=process_monitor
+      - MYSQL_PASSWORD=process_monitor
+      - MYSQL_DATABASE=process_monitor
+    volumes:
+      - backup_db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "--silent"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    ports:
+      - 3306:3306
+
+volumes:
+  backup_db:
+
+networks:
+  default:
+    name: process_monitor
+    external: true
